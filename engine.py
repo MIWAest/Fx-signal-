@@ -46,10 +46,12 @@ def _fred(sid):
     return df.dropna().set_index("date")["val"]
 
 def aud_rate_gate(pair):
-    # AUD/NZD=RBA-RBNZ, AUD/CAD=RBA-BoC の金利差フラット判定を"メモ"で返す
+    # AUD/NZD=豪-NZ, AUD/CAD=豪-加 の金利差フラット判定を"メモ"で返す
+    # ※OECD即時金利(IRSTCI01)はNZが2024-12で打ち切り→3ヶ月銀行間(IR3TIB01・全て現行)に差替
+    #   注: backtestは即時金利で検証済。BOT化前に3ヶ月物で門番を再検証すること。
     try:
-        a=_fred("IRSTCI01AUM156N")
-        b=_fred("IRSTCI01NZM156N" if pair=="AUD/NZD" else "IRSTCI01CAM156N")
+        a=_fred("IR3TIB01AUM156N")
+        b=_fred("IR3TIB01NZM156N" if pair=="AUD/NZD" else "IR3TIB01CAM156N")
         d=pd.concat({"a":a,"b":b},axis=1).dropna(); diff=(d["a"]-d["b"])
         cur=float(diff.iloc[-1]); chg=float(diff.iloc[-1]-diff.iloc[max(0,len(diff)-7)])
         latest=diff.index[-1]
