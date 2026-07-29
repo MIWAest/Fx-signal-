@@ -1,0 +1,26 @@
+name: FX Signal Daily
+on:
+  schedule:
+    - cron: '30 22 * * *'   # 毎日 UTC22:30(=FX日足確定後) に走る
+  workflow_dispatch: {}      # 手動でも回せる
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet yfinance pandas numpy
+      - name: Run engine
+        env:
+          FX_DISCORD_WEBHOOK: ${{ secrets.FX_DISCORD_WEBHOOK }}
+        run: python engine.py --daily
+      - name: Persist state
+        run: |
+          git config user.name "fx-bot"
+          git config user.email "fx-bot@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || (git commit -m "state $(date -u +%F)" && git push)
