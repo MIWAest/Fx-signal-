@@ -46,23 +46,17 @@ def _fred(sid):
     return df.dropna().set_index("date")["val"]
 
 def aud_rate_gate(pair):
-    # AUD/NZD=豪-NZ, AUD/CAD=豪-加 の金利差フラット判定を"メモ"で返す
-    # ※OECD即時金利(IRSTCI01)はNZが2024-12で打ち切り→3ヶ月銀行間(IR3TIB01・全て現行)に差替
-    #   注: backtestは即時金利で検証済。BOT化前に3ヶ月物で門番を再検証すること。
+    # AUD系の金利差を"参考情報"として返す(3ヶ月銀行間 IR3TIB01)。
+    # ※門番は2026-07-29の再検証で非頑健と判明(PF1.57→1.63=誤差)=売買判断には使わん。数字は状況把握用の参考のみ。
     try:
         a=_fred("IR3TIB01AUM156N")
         b=_fred("IR3TIB01NZM156N" if pair=="AUD/NZD" else "IR3TIB01CAM156N")
         d=pd.concat({"a":a,"b":b},axis=1).dropna(); diff=(d["a"]-d["b"])
         cur=float(diff.iloc[-1]); chg=float(diff.iloc[-1]-diff.iloc[max(0,len(diff)-7)])
-        latest=diff.index[-1]
-        flat=abs(chg)<0.25
-        note=f"金利差 現在{cur:+.2f}%・約6M変化{chg:+.2f}% → " + ("フラット✅ 門番GO" if flat else "割れ中⚠ 見送り推奨")
-        import datetime as _dt
-        if (_dt.date.today()-latest.date()).days>100:
-            note+=f"（⚠自動データが{latest.date()}まで＝古い。現在のRBA/RBNZ実値で要確認）"
-        return note
+        trend="フラット" if abs(chg)<0.25 else "拡大中"
+        return f"金利差(3M) 現在{cur:+.2f}%・約6M変化{chg:+.2f}%({trend}) ※参考情報・門番は検証で効果薄=売買判断に使わん"
     except Exception:
-        return "金利差の自動取得に失敗→手動でRBA vs RBNZ(orBoC)を確認して"
+        return "金利差の自動取得に失敗(参考情報)"
 
 # --- ルールカードの定数(検証済み) ---
 ACTIVE = {  # 売買する6ペア (yahooティッカー: 表示名)
