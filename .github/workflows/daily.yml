@@ -16,7 +16,7 @@ jobs:
       - run: pip install --quiet yfinance pandas numpy
       - name: Run engine
         env:
-          FX_DISCORD_WEBHOOK: ${{ secrets.FX_DISCORD_WEBHOOK }}
+          FX_DISCORD_WEBHOOK: ${{ secrets.FX_WEBHOOK }}
         run: python engine.py --daily
       - name: Persist state
         run: |

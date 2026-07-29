@@ -156,7 +156,12 @@ def main():
         print("  → Discord通知:", "送信済" if ok else "webhook未設定(config.json)")
     elif "--daily" in sys.argv:
         near=[f"{n} RSI{round(rsis[n],1)}" for n in ACTIVE.values() if n in rsis and (rsis[n]<=32 or rsis[n]>=68)]
-        post_discord(f"帯FX {today}: 売買なし ✋" + (("  近い→ "+", ".join(near)) if near else ""))
+        ok=post_discord(f"帯FX {today}: 売買なし ✋" + (("  近い→ "+", ".join(near)) if near else ""))
+        print("  → Discord(--daily):", "送信成功" if ok else "送信失敗/webhook無し")
+
+    # 診断: webhookが設定されとるか(値は伏せて)
+    wh=discord_webhook()
+    print("  [診断] webhook設定:", ("あり(...%s)"%wh[-6:]) if wh else "なし(secret/config未設定)")
 
 if __name__=="__main__":
     if "--test" in sys.argv:
