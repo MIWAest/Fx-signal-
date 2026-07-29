@@ -35,6 +35,33 @@ def post_discord(msg):
     except Exception as e:
         print("  (Discord送信失敗:",e,")"); return False
 
+# --- AUD系の金利差門番メモ(判定はMIWA・これは確認材料の自動添付) ---
+def _fred(sid):
+    import io
+    url=f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+    req=urllib.request.Request(url, headers={"User-Agent":"Mozilla/5.0"})
+    raw=urllib.request.urlopen(req,timeout=25).read().decode()
+    df=pd.read_csv(io.StringIO(raw)); df.columns=["date","val"]
+    df["date"]=pd.to_datetime(df["date"]); df["val"]=pd.to_numeric(df["val"],errors="coerce")
+    return df.dropna().set_index("date")["val"]
+
+def aud_rate_gate(pair):
+    # AUD/NZD=RBA-RBNZ, AUD/CAD=RBA-BoC の金利差フラット判定を"メモ"で返す
+    try:
+        a=_fred("IRSTCI01AUM156N")
+        b=_fred("IRSTCI01NZM156N" if pair=="AUD/NZD" else "IRSTCI01CAM156N")
+        d=pd.concat({"a":a,"b":b},axis=1).dropna(); diff=(d["a"]-d["b"])
+        cur=float(diff.iloc[-1]); chg=float(diff.iloc[-1]-diff.iloc[max(0,len(diff)-7)])
+        latest=diff.index[-1]
+        flat=abs(chg)<0.25
+        note=f"金利差 現在{cur:+.2f}%・約6M変化{chg:+.2f}% → " + ("フラット✅ 門番GO" if flat else "割れ中⚠ 見送り推奨")
+        import datetime as _dt
+        if (_dt.date.today()-latest.date()).days>100:
+            note+=f"（⚠自動データが{latest.date()}まで＝古い。現在のRBA/RBNZ実値で要確認）"
+        return note
+    except Exception:
+        return "金利差の自動取得に失敗→手動でRBA vs RBNZ(orBoC)を確認して"
+
 # --- ルールカードの定数(検証済み) ---
 ACTIVE = {  # 売買する6ペア (yahooティッカー: 表示名)
     "AUDNZD=X":"AUD/NZD", "EURCHF=X":"EUR/CHF", "EURGBP=X":"EUR/GBP",
@@ -116,13 +143,19 @@ def main():
 
     save_state(st)
 
+    # AUD系が建った時だけ 金利差メモを1回だけ取得(判定はMIWA)
+    AUD={"AUD/NZD","AUD/CAD"}
+    aud_notes={name:aud_rate_gate(name) for name,side,p,r in opens if name in AUD}
+
     # 3) 今日の指示を表示
     print("="*54)
     print(f"  帯FX 深逆張りバスケット — 今日の指示 ({today})")
     print("="*54)
     if opens:
         print("\n🟢 新規建て(マイクロ口座で):")
-        for name,side,p,r in opens: print(f"   {'買い' if side==1 else '売り'}  {name}  @{p:.5f}  (RSI {r})")
+        for name,side,p,r in opens:
+            print(f"   {'買い' if side==1 else '売り'}  {name}  @{p:.5f}  (RSI {r})")
+            if name in aud_notes: print(f"      🔎 {aud_notes[name]}")
     if closes:
         print("\n🔴 手仕舞い:")
         for name,side,p,pnl,why in closes: print(f"   決済 {name}  @{p:.5f}  損益{pnl:+.2f}%  ({why})")
@@ -148,6 +181,8 @@ def main():
         lines=[f"**🎣 帯FX シグナル ({today})**"]
         for name,side,p,r in opens:
             lines.append(f"🟢 **{'買い' if side==1 else '売り'} {name}** @{p:.5f}  (RSI {r}) → マイクロで建て")
+            if name in aud_notes:
+                lines.append(f"　🔎 AUD系: {aud_notes[name]}")
         for name,side,p,pnl,why in closes:
             lines.append(f"🔴 決済 **{name}** @{p:.5f}  損益{pnl:+.2f}%  ({why})")
         if holds:
