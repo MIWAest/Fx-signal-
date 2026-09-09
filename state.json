@@ -1,3 +1,16 @@
 {
-  "positions": {}
+  "positions": {
+    "AUD/NZD": {
+      "side": -1,
+      "entry": 1.2327899932861328,
+      "entry_date": "2026-09-09",
+      "days": 0
+    },
+    "EUR/NOK": {
+      "side": 1,
+      "entry": 10.717690467834473,
+      "entry_date": "2026-09-09",
+      "days": 0
+    }
+  }
 }
