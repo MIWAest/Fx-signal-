@@ -1,2 +1,3 @@
 close_date,pair,side,entry_date,entry,exit,days,pnl_pct,reason
 2026-09-26,EUR/NOK,買,2026-09-09,10.71769,10.82871,12,0.9,RSI戻り
+2026-10-07,AUD/NZD,売,2026-09-09,1.23279,1.24288,20,-1.0,20日経過
