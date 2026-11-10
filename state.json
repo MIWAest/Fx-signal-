@@ -1,11 +1,5 @@
 {
   "positions": {
-    "EUR/GBP": {
-      "side": 1,
-      "entry": 0.8453199863433838,
-      "entry_date": "2026-10-13",
-      "days": 0
-    },
     "EUR/SEK": {
       "side": 1,
       "entry": 10.997650146484375,
